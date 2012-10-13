@@ -593,13 +593,11 @@ int main(void)
   
   init();
   
-	lcd_init();
+  /* lcd_init(); */
   
-	eeprom_read();
-	 
-  asm("sei");
-  
-  LED_OFF;
+  eeprom_read();
+  /* LED_OFF; */
+
       
   rangemode = RANGE_AUTO;
   
@@ -607,38 +605,39 @@ int main(void)
     /* Toggle high/low threshold */
     rangemode ^= RANGE_HIGH_THRESH;
     l = measure();
-    if (BUTTON_PUSHED) {
-      /* Stop any cap. charging */
-      LED_OFF;
-      LOW_RANGE;
-      DISCHARGE_ON;
-      
-      /* Menu implementation */
-      switch(menu()) {
-      case 0: /* auto range */
-        rangemode |= RANGE_AUTO;
-        break; 
-      case 1: /* low range */
-        rangemode &= ~(RANGE_AUTO | RANGE_HIGH);
-        break;  
-      case 2: /* high range */
-        rangemode &= ~RANGE_AUTO;
-        rangemode |= RANGE_HIGH;
-        break;  
-      case 3: 
-        calibrate_zero();
-        break;  
-      case 4: 
-        calibrate();
-        break;  
-      case 5: 
-        eeprom_write();
-        break;  
-      }
-      
-    }
-    else
-      calc_and_show(l);
+    calc_and_show(l);
+    uart_check_mode();
+  /*   if (BUTTON_PUSHED) { */
+  /*     /\* Stop any cap. charging *\/ */
+  /*     LED_OFF; */
+  /*     LOW_RANGE; */
+  /*     DISCHARGE_ON; */
+
+  /*     /\* Menu implementation *\/ */
+  /*     switch(menu()) { */
+  /*     case 0: /\* auto range *\/ */
+  /*       rangemode |= RANGE_AUTO; */
+  /*       break;  */
+  /*     case 1: /\* low range *\/ */
+  /*       rangemode &= ~(RANGE_AUTO | RANGE_HIGH); */
+  /*       break;   */
+  /*     case 2: /\* high range *\/ */
+  /*       rangemode &= ~RANGE_AUTO; */
+  /*       rangemode |= RANGE_HIGH; */
+  /*       break;   */
+  /*     case 3:  */
+  /*       calibrate_zero(); */
+  /*       break;   */
+  /*     case 4:  */
+  /*       calibrate(); */
+  /*       break;   */
+  /*     case 5:  */
+  /*       eeprom_write(); */
+  /*       break;   */
+  /*     } */
+  /*   } */
+  /*   else */
+  /*     calc_and_show(l); */
   }
 }
 
