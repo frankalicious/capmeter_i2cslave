@@ -273,25 +273,24 @@ SIGNAL(SIG_OVERFLOW1)
 
 void eeprom_read(void)
 {
-  if (eeprom_read_byte((void*)EEPROM_HEADER) != 'C')
+  if (eeprom_read_byte((uint8_t*)EEPROM_HEADER) != 'C')
     return;
     
   if (eeprom_read_byte((uint8_t*)EEPROM_HEADER+1) != 'D')
     return;
   
-  eeprom_read_block(calib_offset, (void*)EEPROM_DATA, SIZE_OF_CALIBOFFSET);
-  /* eeprom_read_block(calib_offset, (uint8_t*)EEPROM_DATA, SIZE_OF_CALIBOFFSET); */
+  eeprom_read_block(calib_offset, (uint8_t*)EEPROM_DATA, SIZE_OF_CALIBOFFSET);
   eeprom_read_block(calib, (uint8_t*)EEPROM_DATA + SIZE_OF_CALIBOFFSET, SIZE_OF_CALIB);
   
 }
 
 void eeprom_write(void)
 {
-  eeprom_write_byte((void*)EEPROM_HEADER, 'C');
-  eeprom_write_byte((void*)EEPROM_HEADER+1, 'D');
+  eeprom_write_byte((uint8_t*)EEPROM_HEADER, 'C');
+  eeprom_write_byte((uint8_t*)EEPROM_HEADER+1, 'D');
   
-  eeprom_write_block(calib_offset, (void*)EEPROM_DATA, SIZE_OF_CALIBOFFSET);
-  eeprom_write_block(calib, (void*)(EEPROM_DATA + SIZE_OF_CALIBOFFSET), SIZE_OF_CALIB);
+  eeprom_write_block(calib_offset, (uint8_t*)EEPROM_DATA, SIZE_OF_CALIBOFFSET);
+  eeprom_write_block(calib, (uint8_t*)(EEPROM_DATA + SIZE_OF_CALIBOFFSET), SIZE_OF_CALIB);
 
 }
 
