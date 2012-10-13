@@ -1,28 +1,30 @@
-//
-// Title        : Capmeter main file
-// Author       : Lars Pontoppidan Larsen
-// Date         : Jan 2006
-// Version      : 1.00
-// Target MCU   : Atmel AVR atmega8, atmega48/88/168
-//
-// DESCRIPTION:
-// Capmeter main implementation. See www accessible documentation.
-//
-// Modify init() function to fit either atmega8 or atmega48/88/168 series.
-//
-// DISCLAIMER:
-// The author is in no way responsible for any problems or damage caused by
-// using this code. Use at your own risk.
-//
-// LICENSE:
-// This code is distributed under the GNU Public License
-// which can be found at http://www.gnu.org/licenses/gpl.txt
-//
+/*
+ * Title        : Capmeter main file
+ * Author       : Lars Pontoppidan Larsen
+ * Date         : Jan 2006
+* Version      : 1.00
+* Target MCU   : Atmel AVR atmega8, atmega48/88/168
+*
+* DESCRIPTION:
+* Capmeter main implementation. See www accessible documentation.
+*
+* Modify init() function to fit either atmega8 or atmega48/88/168 series.
+*
+* DISCLAIMER:
+* The author is in no way responsible for any problems or damage caused by
+* using this code. Use at your own risk.
+*
+* LICENSE:
+* This code is distributed under the GNU Public License
+* which can be found at http:*www.gnu.org/licenses/gpl.txt
+*/
 
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/eeprom.h>
+#include <stdint.h>
+#include <util/delay.h>
 
 #include "lcd.h"
 
@@ -66,7 +68,7 @@ unsigned short volatile timer_highword;
 #define STATE_LOW_THRESH 1
 #define STATE_HIGH_THRESH 2
 #define STATE_DONE 3
-//#define STATE_BUTTONDOWN 4
+/* #define STATE_BUTTONDOWN 4 */
 
 
 unsigned char volatile measure_state;
@@ -161,12 +163,15 @@ High range:
 
    
 unsigned short calib[4] = {21430, 9308, 19423, 8437};
-//unsigned short calib[4] = {53575, 46540, 19423, 8437};
+/* unsigned short calib[4] = {53575, 46540, 19423, 8437}; */
 
 unsigned long calib_offset[4] = {0,0,0,0};
 
 #define SIZE_OF_CALIB 8
 #define SIZE_OF_CALIBOFFSET 16
+
+void eeprom_read(void);
+void uart_check_mode(void);
 
   /* This macro fractionally multiplies 16.16 bit with 0.16 bit both unsigned, 
      shifting the result two bytes right and returning 16.16 bit.
@@ -244,11 +249,11 @@ SIGNAL(SIG_OVERFLOW1)
   timer_highword++;
 }
 
-// SIGNAL(SIG_INTERRUPT0)
-// {
-//   /* Hardware interrupt 0 is a buttonpush */
-//   measure_state = STATE_BUTTONDOWN;
-// }
+/* SIGNAL(SIG_INTERRUPT0) */
+/* { */
+/*   /\* Hardware interrupt 0 is a buttonpush *\/ */
+/*   measure_state = STATE_BUTTONDOWN; */
+/* } */
 
 /* 
    The measure function does the cyclus of a capacitance measurement
