@@ -276,11 +276,12 @@ void eeprom_read(void)
   if (eeprom_read_byte((void*)EEPROM_HEADER) != 'C')
     return;
     
-  if (eeprom_read_byte((void*)EEPROM_HEADER+1) != 'D')
+  if (eeprom_read_byte((uint8_t*)EEPROM_HEADER+1) != 'D')
     return;
   
   eeprom_read_block(calib_offset, (void*)EEPROM_DATA, SIZE_OF_CALIBOFFSET);
-  eeprom_read_block(calib, (void*)EEPROM_DATA + SIZE_OF_CALIBOFFSET, SIZE_OF_CALIB);
+  /* eeprom_read_block(calib_offset, (uint8_t*)EEPROM_DATA, SIZE_OF_CALIBOFFSET); */
+  eeprom_read_block(calib, (uint8_t*)EEPROM_DATA + SIZE_OF_CALIBOFFSET, SIZE_OF_CALIB);
   
 }
 
