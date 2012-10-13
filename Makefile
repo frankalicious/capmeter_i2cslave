@@ -1,7 +1,8 @@
-#C quelldatei name
+#main c source code file  (without file ending)
 code = capmeter
 
 SRC = $(code).c
+# other c files (with file ending)
 SRC += lcd.c
 # SRC += rfm12.c
 # SRC += uart.c
@@ -9,7 +10,7 @@ SRC += lcd.c
 
 OBJ = $(SRC:.c=.o)
 
-# verwendeter Mikrocontroller 
+# used avr microcontroller
 #MCU=atmega8
 #MCU=atmega32
 #MCU=atmega16
