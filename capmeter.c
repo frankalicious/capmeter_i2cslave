@@ -1,30 +1,37 @@
-//
-// Title        : Capmeter main file
-// Author       : Lars Pontoppidan Larsen
-// Date         : Jan 2006
-// Version      : 1.00
-// Target MCU   : Atmel AVR atmega8, atmega48/88/168
-//
-// DESCRIPTION:
-// Capmeter main implementation. See www accessible documentation.
-//
-// Modify init() function to fit either atmega8 or atmega48/88/168 series.
-//
-// DISCLAIMER:
-// The author is in no way responsible for any problems or damage caused by
-// using this code. Use at your own risk.
-//
-// LICENSE:
-// This code is distributed under the GNU Public License
-// which can be found at http://www.gnu.org/licenses/gpl.txt
-//
+/*
+ * Title        : Capmeter main file
+ * Author       : Lars Pontoppidan Larsen
+ * Date         : Jan 2006
+* Version      : 1.00
+* Target MCU   : Atmel AVR atmega8, atmega48/88/168
+*
+* DESCRIPTION:
+* Capmeter main implementation. See www accessible documentation.
+*
+* Modify init() function to fit either atmega8 or atmega48/88/168 series.
+*
+* DISCLAIMER:
+* The author is in no way responsible for any problems or damage caused by
+* using this code. Use at your own risk.
+*
+* LICENSE:
+* This code is distributed under the GNU Public License
+* which can be found at http:*www.gnu.org/licenses/gpl.txt
+*/
 
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/eeprom.h>
+#include <stdint.h>
+#include <util/delay.h>
 
 #include "lcd.h"
+#include "uart.h"
+#include <avr/pgmspace.h> /* Program Space Utilities - interface to data stored in flash */
+
+#define HB(x) ((uint8_t) ((x & 0xFF00)>>8))
+#define LB(x) ((uint8_t) x&0xFF)
 
 /* Hardware IO abstraction macros */
  
@@ -54,6 +61,8 @@
 /* Button abstraction */
 #define BUTTON_PUSHED (!(PIND & (1<<2)))
 
+#define UART_BAUD_RATE 19200
+
 char decades[5] = {'p','n','u','m',' '};
 
 char lcdbuffer[32];
@@ -66,7 +75,7 @@ unsigned short volatile timer_highword;
 #define STATE_LOW_THRESH 1
 #define STATE_HIGH_THRESH 2
 #define STATE_DONE 3
-//#define STATE_BUTTONDOWN 4
+/* #define STATE_BUTTONDOWN 4 */
 
 
 unsigned char volatile measure_state;
@@ -161,12 +170,15 @@ High range:
 
    
 unsigned short calib[4] = {21430, 9308, 19423, 8437};
-//unsigned short calib[4] = {53575, 46540, 19423, 8437};
+/* unsigned short calib[4] = {53575, 46540, 19423, 8437}; */
 
 unsigned long calib_offset[4] = {0,0,0,0};
 
 #define SIZE_OF_CALIB 8
 #define SIZE_OF_CALIBOFFSET 16
+
+void eeprom_read(void);
+void uart_check_mode(void);
 
   /* This macro fractionally multiplies 16.16 bit with 0.16 bit both unsigned, 
      shifting the result two bytes right and returning 16.16 bit.
@@ -244,11 +256,11 @@ SIGNAL(SIG_OVERFLOW1)
   timer_highword++;
 }
 
-// SIGNAL(SIG_INTERRUPT0)
-// {
-//   /* Hardware interrupt 0 is a buttonpush */
-//   measure_state = STATE_BUTTONDOWN;
-// }
+/* SIGNAL(SIG_INTERRUPT0) */
+/* { */
+/*   /\* Hardware interrupt 0 is a buttonpush *\/ */
+/*   measure_state = STATE_BUTTONDOWN; */
+/* } */
 
 /* 
    The measure function does the cyclus of a capacitance measurement
@@ -407,16 +419,30 @@ void calc_and_show(long value)
 {
   unsigned char b;
   unsigned long l;
-  
+
+  uart_puts_P("\n");
   if (rangemode & RANGE_AUTO)
-    lcd_string("Auto ",0);
+    {
+      /* lcd_string("Auto ",0); */
+      uart_puts_P("Auto ");
+    }
   else
-    lcd_string("Force",0);
+    {
+      /* lcd_string("Force",0); */
+      uart_puts_P("Force ");
+    }
+
 
   if (rangemode & RANGE_HIGH) 
-    lcd_string(" high",16);
+    {
+      /* lcd_string(" high",16); */
+      uart_puts_P(" high\n");
+    }
   else
-    lcd_string(" low ",16);
+    {
+      /* lcd_string(" low ",16); */
+      uart_puts_P(" low\n");
+    }
   
   if (rangemode & RANGE_OVERFLOW) {
     /* Todo - this smarter */
@@ -435,15 +461,19 @@ void calc_and_show(long value)
     /* Select calibration value */
     b = rangemode & 3;
   
+    /* uart_puts_P("RAW ["); */
     if (calib_offset[b] > value) {
       lcdbuffer[0] = '-';
+      /* uart_puts_P("-"); */
       value = calib_offset[b] - value;
     }
     else {
       lcdbuffer[0] = ' ';
       value = value - calib_offset[b];
     }
-    
+    /* char buffer[10]; */
+    /* uart_puts(ltoa(value,buffer,10)); */
+    /* uart_puts_P("]\n"); */
     MUL_LONG_SHORT_S2(value, calib[b], l);
     
     b = long2ascii(lcdbuffer+1, l);
@@ -460,11 +490,19 @@ void calc_and_show(long value)
     
   /* Write high threshold in first line, low threshold in second */
   if (rangemode & RANGE_HIGH_THRESH)
-    b=7;
+    {
+      b=7;
+      uart_puts_P("[H] ");
+    }
   else
-    b=23;
-  
-  lcd_string(lcdbuffer,b);
+    {
+      b=23;
+      uart_puts_P("[L] ");
+    }
+
+  /* lcd_string(lcdbuffer,b); */
+  lcdbuffer[32] = 0;		/* null termination */
+  uart_puts(&lcdbuffer[0]);
 }
 
 void calibrate_zero(void)
@@ -587,6 +625,52 @@ void init(void)
   
 }
 
+void uart_check_mode(void)
+{
+  uint16_t data_16 = uart_getc();
+  if (HB(data_16)==0)
+    {
+      LED_OFF;
+      LOW_RANGE;
+      DISCHARGE_ON;
+
+      uart_puts_P("\nMENU\n");
+      switch(LB(data_16))
+	{
+	case 'A':
+	  uart_puts("Range: Auto\n");
+	  rangemode |= RANGE_AUTO;
+	  break;
+	case 'L':
+	  uart_puts("Range: Low\n");
+	  rangemode &= ~(RANGE_AUTO | RANGE_HIGH);
+	  break;
+	case 'H':
+	  uart_puts("Range: High\n");
+	  rangemode &= ~RANGE_AUTO;
+	  rangemode |= RANGE_HIGH;
+	  break;
+	case '0':
+	  uart_puts("Calibrate: Zero\n");
+	  calibrate_zero();
+	  break;
+	case '1':
+	  uart_puts("Calibrate: 1 uF\n");
+	  calibrate();
+	  break;
+	case 'S':
+	  uart_puts("Save calibration\n");
+	  eeprom_write();
+	  break;
+	default:
+	  uart_puts_P("unknown:");
+	  uart_putc(LB(data_16));
+	  uart_puts("\n");
+	  break;
+	}
+    }
+}
+
 int main(void)
 {
   unsigned long l;
@@ -595,12 +679,19 @@ int main(void)
   
   /* lcd_init(); */
   
-  eeprom_read();
   /* LED_OFF; */
-
       
+  eeprom_read();
+
+  sei();
+  uart_init( UART_BAUD_SELECT(UART_BAUD_RATE,F_CPU) );
+
   rangemode = RANGE_AUTO;
-  
+
+  /* while (1) { */
+  /*   uart_puts_P("."); */
+  /*   _delay_ms(1000); */
+  /* } */
   while (1) {
     /* Toggle high/low threshold */
     rangemode ^= RANGE_HIGH_THRESH;

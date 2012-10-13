@@ -5,7 +5,7 @@ SRC = $(code).c
 # other c files (with file ending)
 SRC += lcd.c
 # SRC += rfm12.c
-# SRC += uart.c
+SRC += uart.c
 # SRC += twimaster.c
 
 OBJ = $(SRC:.c=.o)
