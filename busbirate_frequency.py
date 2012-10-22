@@ -1,8 +1,5 @@
 #!/usr/bin/python
 '''
-testing complete communication
-(uart->rfm12) -> (rfm12->i2c)
-(i2c->rfm12) -> (rfm12->uart)
 '''
 
 import serial
@@ -57,22 +54,7 @@ class Communicate:
 
 if __name__ == '__main__':
     myCom = Communicate('/dev/ttyUSB0')
-# for address in [x<<1 for x in range(1,128)]:
-# for address in [0x12,0x18]:
-# for address in [0x12]:
-    # data = [address, ord('a')]
-    # data = [address, ord('g')]
-    # data_string = array.array('B', data).tostring()
-    # HANDLE.write(data_string)
-    # time.sleep(1)
-    # print HANDLE.read(1000)
 
-
-# address_blinkm_mini = [0x12]
-# address_blinkm_hp = [0x18]
-# address = address_blinkm_hp
-    # myCom.send(address=0x12, command=ord('a'))
-    # myCom.send(address=0x12, command=ord('a'))
     while True:
         lines = myCom.read()
         with open("out.txt", "a") as myfile:
@@ -81,11 +63,3 @@ if __name__ == '__main__':
             myfile.write('\n'+date_str+'\n')
         myCom.send('f\n')
         time.sleep(1)
-# command = [ord('g')]
-# command = [ord('g')]
-# command = [ord('c'),255,255,0]
-# command = [ord('Z')]
-# command = [ord('R'),0,0]
-# command = [ord('o')]
-# command = [ord('p'), 10,0,0]
-# command = [ord('t'), 100]
