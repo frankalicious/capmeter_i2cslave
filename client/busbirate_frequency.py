@@ -54,6 +54,7 @@ class Communicate:
 
 if __name__ == '__main__':
     myCom = Communicate('/dev/ttyUSB0')
+    myCom.send('m\n2\n')#bus pirate: select 1 wire mode (in default mode/hiz mode external power supply can not be set
     myCom.send('W\n')#bus pirate: power supplies on
     while True:
         lines = myCom.read()#read output from bus pirate
