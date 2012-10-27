@@ -54,12 +54,12 @@ class Communicate:
 
 if __name__ == '__main__':
     myCom = Communicate('/dev/ttyUSB0')
-
+    myCom.send('W\n')#bus pirate: power supplies on
     while True:
-        lines = myCom.read()
+        lines = myCom.read()#read output from bus pirate
         with open("out.txt", "a") as myfile:
-            myfile.write(lines)
+            myfile.write(lines)#save data from bus pirate to file
             date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            myfile.write('\n'+date_str+'\n')
-        myCom.send('f\n')
+            myfile.write('\n'+date_str+'\n')#save date to file
+        myCom.send('f\n')#bus pirate: measure frequency on the AUX pin
         time.sleep(1)
