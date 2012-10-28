@@ -34,10 +34,12 @@ class Communicate:
         self._handle.flushOutput()
         # time.sleep(1)
 
-    def send(self, data):
+    def send(self, data, log=True):
         # data_string = array.array('B', data).tostring()
         # self._handle.write(data_string)
         self._handle.write(data)
+        if log:
+            self.saveLog()
 
     def read(self):
         # time.sleep(5)
@@ -52,15 +54,21 @@ class Communicate:
             print received,
         return received
 
+    def saveLog(self):
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        lines = myCom.read()#read output from bus pirate
+        with open("out.txt", "a") as myfile:
+            myfile.write('\n'+date_str+'\n')#save date to file
+            myfile.write(lines)#save data from bus pirate to file
+
 if __name__ == '__main__':
     myCom = Communicate('/dev/ttyUSB0')
     myCom.send('m\n2\n')#bus pirate: select 1 wire mode (in default mode/hiz mode external power supply can not be set
-    myCom.send('W\n')#bus pirate: power supplies on
     while True:
-        lines = myCom.read()#read output from bus pirate
-        with open("out.txt", "a") as myfile:
-            myfile.write(lines)#save data from bus pirate to file
-            date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            myfile.write('\n'+date_str+'\n')#save date to file
-        myCom.send('f\n')#bus pirate: measure frequency on the AUX pin
-        time.sleep(1)
+        Count = 10
+        myCom.send('W\n')#bus pirate: power supplies on
+        while Count:
+            Count -= 1
+            myCom.send('f\n')#bus pirate: measure frequency on the AUX pin
+        myCom.send('w\n')#bus pirate: power supplies off
+        time.sleep(5*60)
