@@ -117,9 +117,10 @@ def plot_raw(date_list, frequency_list):
     plt.title('raw values')
 
 def plot_lowpass(date_list, frequency_list):
-    frequency_list_filtered = signal.lfilter(b, 10, frequency_list)    
     FC = 0.1#still need to find a good value here
     b = signal.firwin(len(frequency_list), cutoff=FC, window='hamming')    # filter numerator
+    frequency_list_filtered = signal.lfilter(b, 10, frequency_list)    
+
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     ax.plot_date(date_list, frequency_list_filtered,'b-',xdate=True)
