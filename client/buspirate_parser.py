@@ -5,6 +5,8 @@ from matplotlib.dates import date2num, num2date
 import scipy
 import pprint
 from datetime import datetime, timedelta
+from scipy import signal
+import numpy
 
 #filtering http://www.swharden.com/blog/2009-01-21-signal-filtering-with-python/
 #http://www.scipy.org/Cookbook/SignalSmooth
@@ -40,6 +42,21 @@ def plotSpectrum(y,Fs):
     plt.xlabel('Freq (Hz)')
     plt.ylabel('|Y(freq)|')
 
+#http://azitech.wordpress.com/2011/03/15/designing-a-butterworth-low-pass-filter-with-scipy/
+def plotSpectrum2(y, samp_rate):
+    nsamps = len(y)
+    # input signal spectrum
+    xfreq = numpy.fft.fft(y)
+    fft_freqs = numpy.fft.fftfreq(nsamps, d=1./samp_rate)
+    fig = plt.figure()
+    fig.add_subplot(111)
+    ax = fig.add_subplot(1,1,1)
+
+    plt.loglog(fft_freqs[0:nsamps/2], numpy.abs(xfreq)[0:nsamps/2])
+    plt.title('Filter Input - Frequency Domain')
+    # plt.text(0.03, 0.01, "freqs: "+str(freqs)+" Hz")
+    plt.grid(True)
+
 def smoothListGaussian(list,strippedXs=False,degree=5):  
 
     window=degree*2-1  
@@ -66,73 +83,75 @@ def get_data():
     return raw_data
 
 def parse_data(read_data):
-    parsed = {}
-    parsed['freq'] = []
-    parsed['date'] = []
-    # parsed['low_errors'] = 0
-    # parsed['high_errors'] = 0
+    parsed = []
 
     #we expect first date then the frequency
-    expect_date = True
     for line in read_data.splitlines():
         splitted = line.split()
-        if any("2012" in s for s in splitted) and expect_date:
+        if any("2012" in s for s in splitted):
             mydate = ' '.join(splitted)
             mydate_num = date2num(datetime.strptime(mydate,"%Y-%m-%d %H:%M:%S"))
-            parsed['date'].append(mydate_num)
-            expect_date = False
-            # print mydate_num
-
             # datetime.strptime('2012-10-22 19:53:12',"%Y-%m-%d %H:%M:%S")
             
-        if 'Hz' in splitted and not expect_date:
+        if 'Hz' in splitted:
             raw_value = splitted[-2]
-            # print parsed['freq']
-            if ',' in raw_value:#we don't use these strange values
-                print num2date(parsed['date'][-1]), splitted
-                # print splitted
-                # print raw_value,
-                # raw_value = raw_value.replace(',','')
-                # print raw_value,
-                # print parsed['date'][-1]
-                parsed['date'].pop()#check if we have to remove tha last one or the next one
-
+            raw_value = raw_value.replace(',','')#thousands are seperated with commas. remove them
+            try:
+                int_val = int(raw_value)
+            except ValueError:
+                print 'can\'t parse:', line
+            
             else:
-                parsed['freq'].append(raw_value)
-                expect_date = True
-            # parsed['freq'].append(raw_value)
+                parsed.append({'date': mydate_num, 'freq': int_val})
  
     if DEBUG:
-        print "len(parsed['date']):", len(parsed['date'])
-        print "len(parsed['freq']):", len(parsed['freq'])
-
-    #fix length
-    if len(parsed['date']) > len(parsed['freq']):
-        print 'cutting down date list'
-        parsed['date'] = parsed['date'][0:len(parsed['freq'])]
-    elif len(parsed['freq']) > len(parsed['date']):
-        print 'cutting down frequency list'
-        parsed['freq'] = parsed['freq'][0:len(parsed['date'])]
+        print "len(parsed):", len(parsed)
         
     return parsed
 
+def plot_raw(date_list, frequency_list):
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.plot_date(date_list, frequency_list, 'b-', xdate=True)
+    ax.plot_date(date_list, frequency_list ,'ro', xdate=True)
+    plt.title('raw values')
 
+def plot_lowpass(date_list, frequency_list):
+    frequency_list_filtered = signal.lfilter(b, 10, frequency_list)    
+    FC = 0.1#still need to find a good value here
+    b = signal.firwin(len(frequency_list), cutoff=FC, window='hamming')    # filter numerator
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.plot_date(date_list, frequency_list_filtered,'b-',xdate=True)
+    ax.plot_date(date_list, frequency_list_filtered,'ro',xdate=True)
+    plt.title('low pass filtered')
+
+
+def plot_gauss(date_list, frequency_list):
+    frequency_list_gauss = smoothListGaussian(frequency_list, False, 10)
+    # frequency_list_gauss = smoothListGaussian(frequency_list)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+
+    # ax.plot_date(date_list, frequency_list_gauss)
+    ax.plot(frequency_list_gauss,'b-',)
+    ax.plot(frequency_list_gauss,'ro',)
+    plt.title('gauss filtered')
 
 raw_data = get_data()
 parsed_data = parse_data(raw_data)
 
-# print 'count of high errors:', parsed_data['high_errors']
-# print 'count of low errors:', parsed_data['low_errors']
+if DEBUG:
+    pprint.pprint (parsed_data)
 
-#only use last 4000 examples
-parsed_data['date'] = parsed_data['date'][-4000:]
-parsed_data['freq'] = parsed_data['freq'][-4000:]
+date_list = [x['date']  for x in parsed_data]
+frequency_list = [x['freq']  for x in parsed_data]
 
-fig = plt.figure()
-ax = fig.add_subplot(1,1,1)
-# pprint.pprint (parsed_data)
-ax.plot_date(parsed_data['date'],parsed_data['freq'],'b-',xdate=True)
-ax.plot_date(parsed_data['date'],parsed_data['freq'],'ro',xdate=True)
+plot_raw(date_list, frequency_list)
+plotSpectrum2(frequency_list,1)
+plot_gauss(date_list, frequency_list)
+plot_lowpass(date_list, frequency_list)
 
 # Set the xtick locations to correspond to just the dates you entered.
 # ax.set_xticks(parsed_data['date'])
