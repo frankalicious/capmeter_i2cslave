@@ -65,10 +65,11 @@ if __name__ == '__main__':
     myCom = Communicate('/dev/ttyUSB0')
     myCom.send('m\n2\n')#bus pirate: select 1 wire mode (in default mode/hiz mode external power supply can not be set
     while True:
-        Count = 10
+        Count = 20
         myCom.send('W\n')#bus pirate: power supplies on
         while Count:
+            time.sleep(1)#give the oscillator time to stabilize
             Count -= 1
             myCom.send('f\n')#bus pirate: measure frequency on the AUX pin
         myCom.send('w\n')#bus pirate: power supplies off
-        time.sleep(5*60)
+        time.sleep(3*60)
